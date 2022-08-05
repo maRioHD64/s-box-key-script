@@ -1,0 +1,138 @@
+// ==UserScript==
+// @name         Le claimer
+// @namespace    http://tampermonkey.net/
+// @version      0.12
+// @description  try to claim yourself access to a game that doesn't exist (its a hoax)
+// @author       Dank (Discord: Dank#9470)
+// @match        https://asset.party/~get
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=asset.party
+// @grant        none
+// ==/UserScript==
+
+(function () {
+
+    'use strict';
+
+    var ATTEMPT = 0;
+
+    var notify = function (title, text) {
+
+        if (window.Notification && Notification.permission === 'granted') {
+
+            // Send a notification that we tried to claim a slot.
+
+            new Notification(title, {
+
+                body: text,
+
+                // My profile pic, don't change!
+
+                icon: 'https://avatars.akamai.steamstatic.com/e4ae906ef560e0a6af53052b9de35cd79727291c_full.jpg',
+
+            });
+
+        }
+
+        console.log(text);
+
+    }
+
+    var claimButton = function () {
+
+        // In case the website gets "updated".
+
+        var content = document.body.textContent || document.body.innerText;
+
+        var needsRefresh = content.indexOf("please refresh page") !== -1;
+
+        if (needsRefresh) {
+
+            window.location.reload();
+
+        }
+
+        // Check to make sure we are not rate limited.
+
+        let header = document.querySelector('h2');
+
+        if (header != null && document.querySelector('h2').textContent == 'You missed!') {
+
+            notify("#failing", "Attempt #" + ATTEMPT + " has failed terribly, consult your local Dank!");
+
+            return;
+
+        }
+
+        var btns = document.querySelectorAll("button");
+
+        for (var i = 0; i < btns.length; i++) {
+
+            var btn = btns[i];
+
+            // If it is NOT disabled we might have ourselves a CATCH, zoo wee mama.
+
+            if (!btn.disabled) {
+
+                notify("#winning", 'Tried to claim a slot! Attempt #' + ATTEMPT);
+
+                btn.click();
+
+                ATTEMPT += 1;
+
+            }
+
+            // If it is NOT the orange (#ff9800) background we also might have ourselves a CATCH, hee hee.
+
+            if (!btn.style.backgroundColor == "#ff9800") {
+
+                // Button is opaque, i think this is the clickable ones!
+
+                if (btn.style.opacity == 1) {
+
+                    notify("#winning 2", 'Tried to claim a slot! Attempt #' + ATTEMPT);
+
+                    btn.click();
+
+                    ATTEMPT += 1;
+
+                } else {
+
+                    console.log("LeClaimer: Unknown btn state for " + btn);
+
+                }
+
+            }
+
+        }
+
+    };
+
+    // Give perms to send our desktop notifications.
+
+    Notification.requestPermission().then(function (permission) {
+
+        if (permission === "granted") {
+
+            notify("LeClaimer Setup!", "Check back in a few years!");
+
+        }
+
+    });
+
+    // Hmmm today i will observe.
+
+    var MO = new MutationObserver(claimButton);
+
+    MO.observe(document.body, {
+
+        attributes: true,
+
+        childList: true,
+
+        characterData: false,
+
+        subtree: true
+
+    });
+
+})();
